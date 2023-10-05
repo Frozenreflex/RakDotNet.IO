@@ -140,8 +140,11 @@ namespace RakDotNet.IO
                 // check if we don't have to do complex bit level operations
                 if (bitOffset == 0 && (bits & 7) == 0)
                 {
+#if NETSTANDARD2_1_OR_GREATER
                     _stream.Write(buf);
-
+#else
+                    _stream.Write(buf.ToArray(), 0, buf.Length);
+#endif
                     _pos += bits;
 
                     return bufSize;
@@ -151,7 +154,13 @@ namespace RakDotNet.IO
                 Span<byte> bytes = stackalloc byte[byteCount];
 
                 // we might already have data in the stream
+#if NETSTANDARD2_1_OR_GREATER
                 var readSize = _stream.Read(bytes);
+#else
+                var readbuffer = new byte[byteCount];
+                var readSize = _stream.Read(readbuffer, 0, byteCount);
+                readbuffer.CopyTo(bytes);
+#endif
 
                 // subtract the read bytes from the position so we can write them later
                 _stream.Position -= readSize;
@@ -182,7 +191,11 @@ namespace RakDotNet.IO
                     bytes.Reverse();
 
                 // write the buffer
+#if NETSTANDARD2_1_OR_GREATER
                 _stream.Write(bytes);
+#else
+                _stream.Write(bytes.ToArray(), 0, bytes.Length);
+#endif
 
                 // roll back the position in case we haven't used the last byte fully
                 _stream.Position -= (byteCount - bufSize);

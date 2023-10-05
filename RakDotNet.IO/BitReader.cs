@@ -107,7 +107,13 @@ namespace RakDotNet.IO
                 Span<byte> bytes = stackalloc byte[byteCount];
 
                 // read from the Stream to the buf on the stack
+#if NETSTANDARD2_1_OR_GREATER
                 _stream.Read(bytes);
+#else
+                var readbuffer = new byte[byteCount];
+                _stream.Read(readbuffer, 0, byteCount);
+                readbuffer.CopyTo(bytes);
+#endif
 
                 // swap endianness in case we're not using same endianness as host
                 if ((_endianness != Endianness.LittleEndian && BitConverter.IsLittleEndian) ||
